@@ -2,15 +2,15 @@ package com.vis.backend.service.impl;
 
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import com.vis.backend.entity.Evaluation;
-import com.vis.backend.entity.EvaluationPoint;
-import com.vis.backend.entity.RewardPoint;
+import com.vis.backend.entity.*;
 import com.vis.backend.model.response.RewardPointResponse;
 import com.vis.backend.model.response.TimeKeepingResponse;
 import com.vis.backend.repository.*;
+import com.vis.backend.service.EmployeeService;
 import com.vis.backend.service.PointService;
 import com.vis.backend.util.DateTimeUtil;
 import org.apache.commons.lang3.ObjectUtils;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -54,10 +54,10 @@ public class PointServiceImpl implements PointService {
     private RewardPointRepository rewardPointRepository;
 
     @Autowired
-    private EvaluationRepository evaluationRepository;
+    private DateTimeUtil dateTimeUtil;
 
     @Autowired
-    private DateTimeUtil dateTimeUtil;
+    private EmployeeRepository employeeRepository;
 
     @Override
     public Optional<List<RewardPointResponse>> calPoint(MultipartFile file) throws IOException {
@@ -119,6 +119,12 @@ public class PointServiceImpl implements PointService {
             timeKeeping.setWorkDays(workDays);
             listTimeKeeping.add(timeKeeping);
         }
+        List<String> listEmail = new ArrayList<>();
+        List<Long> ids = new ArrayList<>();
+        for (TimeKeepingResponse item : listTimeKeeping) {
+            ids.add(Long.valueOf(item.getEmployeeId()));
+        }
+        List<Employee> listEmployee = employeeRepository.findAllById(ids);
         return Optional.ofNullable(calRewardPoint(listTimeKeeping));
     }
 
@@ -143,6 +149,39 @@ public class PointServiceImpl implements PointService {
     public Optional<Float> getRewardPoint(String employeeId) {
         Optional<Float> point = rewardPointRepository.getRewardPoint(Long.valueOf(employeeId));
         return point;
+    }
+
+    @Override
+    public Optional<Boolean> exchangePoint(String cost, String employeeId, String serviceId) {
+
+        RewardPoint rewardPoint = RewardPoint.builder()
+                .employeeId(Long.valueOf(employeeId))
+                .point(-Float.valueOf(cost))
+                .createdAt(dateTimeUtil.getCurrentTimeStamp())
+                .modifiedAt(dateTimeUtil.getCurrentTimeStamp())
+                .modifiedBy(employeeId)
+                .createdBy(employeeId)
+                .date(dateTimeUtil.getCurrentTimeStamp())
+                .build();
+        RewardPoint optionalRewardPoint = rewardPointRepository.save(rewardPoint);
+        if (ObjectUtils.isEmpty(optionalRewardPoint)) {
+            return Optional.of(false);
+        }
+        RewardHistory rewardHistory = RewardHistory.builder()
+                .employeeId(Long.valueOf(employeeId))
+                .createdAt(dateTimeUtil.getCurrentTimeStamp())
+                .modifiedAt(dateTimeUtil.getCurrentTimeStamp())
+                .modifiedBy(employeeId)
+                .createdBy(employeeId)
+                .pointUse(Float.valueOf(cost))
+                .date(dateTimeUtil.getCurrentTimeStamp())
+                .serviceId(Long.valueOf(serviceId))
+                .build();
+        RewardHistory history = rewardHistoryRepository.save(rewardHistory);
+        if (ObjectUtils.isEmpty(history)) {
+            return Optional.of(false);
+        }
+        return Optional.of(true);
     }
 
     private boolean saveRewardPoint(List<RewardPointResponse> list) {
@@ -184,9 +223,9 @@ public class PointServiceImpl implements PointService {
     }
 
     private boolean saveEvaluation(List<RewardPointResponse> list) {
-        List<Evaluation> evaluations = new ArrayList<>();
+        List<EvaluationPoint> evaluations = new ArrayList<>();
         for (RewardPointResponse item : list) {
-            Evaluation evaluation = Evaluation.builder()
+            EvaluationPoint evaluation = EvaluationPoint.builder()
                     .dayOff(item.getDayLeft())
                     .dayWork(item.getDayWork())
                     .lateTime(item.getTimeLate())
@@ -196,11 +235,13 @@ public class PointServiceImpl implements PointService {
                     .createdBy("admin")
                     .employeeId(Long.valueOf(item.getEmployeeID()))
                     .date(dateTimeUtil.getCurrentTimeStamp())
+                    .overTime(item.getOverTime())
+                    .point(item.getTotalPoint())
                     .build();
 
             evaluations.add(evaluation);
         }
-        List<Evaluation> result = evaluationRepository.saveAll(evaluations);
+        List<EvaluationPoint> result = evaluationPointRepository.saveAll(evaluations);
         return result.isEmpty() ? false : true;
     }
     private List calRewardPoint(List<TimeKeepingResponse> list) {

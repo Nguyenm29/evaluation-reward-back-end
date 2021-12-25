@@ -9,7 +9,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.util.List;
 
@@ -32,4 +31,12 @@ public class PointController extends AbstractController<PointService> {
     public ResponseEntity<?> getPointReward(@RequestParam(value = "employeeId", required = false) String employeeId) {
         return response(service.getRewardPoint(employeeId));
     }
+
+    @GetMapping("/point/exchange")
+    public ResponseEntity<?> exchangePoint(@RequestParam(value = "cost") String cost,
+                                           @RequestParam(value = "employeeId") String employeeId,
+                                           @RequestParam(value = "serviceId", required = false) String serviceId) {
+        return response(service.exchangePoint(cost, employeeId, serviceId));
+    }
+
 }

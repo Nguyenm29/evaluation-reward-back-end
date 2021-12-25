@@ -17,4 +17,6 @@ public interface PointService {
     public Optional<Boolean> save(List<RewardPointResponse> list);
 
     public Optional<Float> getRewardPoint(String employeeId);
+
+    public Optional<Boolean> exchangePoint(String cost, String employeeId, String serviceId);
 }
