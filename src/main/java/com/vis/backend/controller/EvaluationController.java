@@ -8,12 +8,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
-@RequestMapping("/evaluation")
+@RequestMapping("/back/evaluation")
 public class EvaluationController extends AbstractController<EvaluationService>{
 
     @GetMapping("")
     public ResponseEntity<?> getEvaluation(@RequestParam("employeeId") String employeeId) {
-
-        return null;
+        return response(service.getEvaluationByEmployeeId(employeeId));
     }
 }

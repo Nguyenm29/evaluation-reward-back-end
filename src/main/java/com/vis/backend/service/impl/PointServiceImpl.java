@@ -134,10 +134,6 @@ public class PointServiceImpl implements PointService {
         if (!isSaveRewardPoint) {
             return Optional.of(false);
         }
-        boolean isSaveEvaluationPoint = saveEvaluationPoint(list);
-        if (!isSaveEvaluationPoint) {
-            return Optional.of(false);
-        }
         boolean isSaveEvaluation = saveEvaluation(list);
         if (!isSaveEvaluation) {
             return Optional.of(false);
@@ -200,25 +196,6 @@ public class PointServiceImpl implements PointService {
             listRewardPoint.add(rewardPoint);
         }
         List<RewardPoint> result = rewardPointRepository.saveAll(listRewardPoint);
-        return result.isEmpty() ? false : true;
-    }
-
-    private boolean saveEvaluationPoint(List<RewardPointResponse> list) {
-        List<EvaluationPoint> pointList = new ArrayList<>();
-        for (RewardPointResponse item : list) {
-            EvaluationPoint point = EvaluationPoint.builder()
-                    .point(item.getTotalPoint())
-                    .createdAt(dateTimeUtil.getCurrentTimeStamp())
-                    .modifiedAt(dateTimeUtil.getCurrentTimeStamp())
-                    .modifiedBy("admin")
-                    .createdBy("admin")
-                    .employeeId(Long.valueOf(item.getEmployeeID()))
-                    .date(dateTimeUtil.getCurrentTimeStamp())
-                    .build();
-
-            pointList.add(point);
-        }
-        List<EvaluationPoint> result = evaluationPointRepository.saveAll(pointList);
         return result.isEmpty() ? false : true;
     }
 
